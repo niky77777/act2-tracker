@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Act 2.0 — Goal & Life Tracker</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+  <meta name="theme-color" content="#0d1117" />
+</head>
+<body>
+  <header>
+    <h1>Act 2.0 — Goal & Life Tracker</h1>
+    <div class="header-actions">
+      <button id="theme-toggle" class="secondary">🌓 Тема</button>
+    </div>
+    <nav id="tabs">
+      <button data-tab="daily">Daily</button>
+      <button data-tab="weekly">Weekly</button>
+      <button data-tab="monthly">Monthly</button>
+      <button data-tab="okrs">Vision & OKRs</button>
+      <button data-tab="reset">Reset</button>
+      <button data-tab="dash">Dashboard</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="daily" class="tab">
+      <h2>Daily Tracker</h2>
+      <label>Дата: <input type="date" id="d-date" /></label>
+      <div class="grid-2">
+        <div>
+          <h3>Big 3 задачи</h3>
+          <div class="big3">
+            <input id="d-b1" placeholder="Задача 1" />
+            <label><input type="checkbox" id="d-b1c" /> ✔</label>
+          </div>
+          <div class="big3">
+            <input id="d-b2" placeholder="Задача 2" />
+            <label><input type="checkbox" id="d-b2c" /> ✔</label>
+          </div>
+          <div class="big3">
+            <input id="d-b3" placeholder="Задача 3" />
+            <label><input type="checkbox" id="d-b3c" /> ✔</label>
+          </div>
+        </div>
+        <div>
+          <h3>Минимален стандарт (Never Zero)</h3>
+          <textarea id="d-min" placeholder="Най-малката стъпка, дори в слаб ден"></textarea>
+          <h3>Бележки</h3>
+          <textarea id="d-notes" placeholder="Кратък дневен отчет"></textarea>
+        </div>
+      </div>
+      <button class="primary" id="d-save">Запази деня</button>
+    </section>
+
+    <section id="weekly" class="tab hidden">
+      <h2>Weekly Planner</h2>
+      <div class="meta-row">
+        <div class="meta-card">
+          <strong>Доминираща цел:</strong>
+          <div id="meta-dominant" class="meta-text">—</div>
+        </div>
+        <div class="meta-card">
+          <strong>Награда:</strong>
+          <div id="meta-reward" class="meta-text">—</div>
+        </div>
+      </div>
+      <div class="week-row">
+        <label>Седмица:
+          <input id="w-week" placeholder="YYYY-MM-DD → YYYY-MM-DD" />
+        </label>
+        <label>Дата в седмицата:
+          <input type="date" id="w-date" />
+        </label>
+        <button id="w-this" class="secondary">Тази седмица</button>
+        <button id="w-from-date" class="secondary">Изчисли от дата</button>
+        <button id="w-autoscore" class="secondary">Авто % от дневни</button>
+        <button id="w-dup" class="secondary">Дублирай миналата</button>
+      </div>
+      <div class="grid-2">
+        <div>
+          <h3>Финанси/Бизнес</h3>
+          <textarea id="w-biz" placeholder="1–2 цели за седмицата"></textarea>
+          <h3>Здраве</h3>
+          <textarea id="w-health" placeholder="Тренировки, сън, хранене"></textarea>
+        </div>
+        <div>
+          <h3>Социален/Личностен</h3>
+          <textarea id="w-social" placeholder="Английски, култура, контакти"></textarea>
+          <h3>Интимен живот</h3>
+          <textarea id="w-intim" placeholder="Ритуали, време за връзката"></textarea>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div>
+          <h3>Big 3 за седмицата</h3>
+          <input id="w-b1" placeholder="Фокус 1" />
+          <input id="w-b2" placeholder="Фокус 2" />
+          <input id="w-b3" placeholder="Фокус 3" />
+        </div>
+        <div>
+          <h3>Отчет (неделя)</h3>
+          <label>% изпълнение: <input id="w-score" type="number" min="0" max="100" placeholder="80" />%</label>
+          <textarea id="w-retro" placeholder="3 успеха + 1 урок"></textarea>
+        </div>
+      </div>
+      <button class="primary" id="w-save">Запази седмицата</button>
+    </section>
+
+    <section id="monthly" class="tab hidden">
+      <h2>Monthly Planner</h2>
+      <label>Месец:
+        <input id="m-month" placeholder="Септември 2025" />
+      </label>
+      <div class="grid-2">
+        <div>
+          <h3>Основен фокус (свързан с OKRs)</h3>
+          <textarea id="m-focus" placeholder="Пр: Проучване на 5 бизнес възможности"></textarea>
+          <h3>Ключови задачи</h3>
+          <textarea id="m-tasks" placeholder="Списък с ключови задачи за месеца"></textarea>
+        </div>
+        <div>
+          <h3>Бележки</h3>
+          <textarea id="m-notes" placeholder="Контекст, рискове, ресурси"></textarea>
+          <label>% изпълнение: <input id="m-score" type="number" min="0" max="100" placeholder="0" />%</label>
+        </div>
+      </div>
+      <button class="primary" id="m-save">Запази месеца</button>
+    </section>
+
+    <section id="okrs" class="tab hidden">
+      <h2>Vision & OKRs</h2>
+      <div class="grid-2">
+        <div>
+          <h3>Vision</h3>
+          <textarea id="v-2050" placeholder="Визия 2050"></textarea>
+          <textarea id="v-2030" placeholder="Визия 2030"></textarea>
+          <textarea id="v-2026" placeholder="Визия 2026"></textarea>
+        </div>
+        <div>
+          <h3>OKRs (Годишни)</h3>
+          <textarea id="okr-1" placeholder="Objective 1 + KRs"></textarea>
+          <label>Прогрес O1: <input id="okr-1p" type="number" min="0" max="100" placeholder="0" />%</label>
+          <textarea id="okr-2" placeholder="Objective 2 + KRs"></textarea>
+          <label>Прогрес O2: <input id="okr-2p" type="number" min="0" max="100" placeholder="0" />%</label>
+          <textarea id="okr-3" placeholder="Objective 3 + KRs"></textarea>
+          <label>Прогрес O3: <input id="okr-3p" type="number" min="0" max="100" placeholder="0" />%</label>
+          <textarea id="okr-4" placeholder="Objective 4 + KRs"></textarea>
+          <label>Прогрес O4: <input id="okr-4p" type="number" min="0" max="100" placeholder="0" />%</label>
+          <hr />
+          <h3>Шаблони</h3>
+          <label>Доминираща цел (6–12 м): <input id="meta-dominant-inp" placeholder="Пр: Стартиране на бизнес до 31.03.2026" /></label>
+          <label>Награда: <input id="meta-reward-inp" placeholder="Пр: 7 дни Малдиви, април 2026" /></label>
+        </div>
+      </div>
+      <button class="primary" id="okrs-save">Запази OKRs/Визия/Шаблони</button>
+    </section>
+
+    <section id="reset" class="tab hidden">
+      <h2>Reset Protocol</h2>
+      <ol>
+        <li><input id="r-1" placeholder="Какво пропуснах?" /></li>
+        <li><input id="r-2" placeholder="Какво научавам?" /></li>
+        <li><input id="r-3" placeholder="Най-малката следваща стъпка?" /></li>
+        <li><input id="r-4" placeholder="Ангажимент (обещавам да...)" /></li>
+        <li><button id="r-commit" class="primary">Нов старт</button></li>
+      </ol>
+      <div id="r-history"></div>
+    </section>
+
+    <section id="dash" class="tab hidden">
+      <h2>Dashboard</h2>
+      <div class="stats">
+        <div><strong id="stat-days">0</strong><span>Записани дни</span></div>
+        <div><strong id="stat-weeks">0</strong><span>Записани седмици</span></div>
+        <div><strong id="stat-months">0</strong><span>Записани месеци</span></div>
+        <div><strong id="stat-resets">0</strong><span>Рестарти</span></div>
+      </div>
+      <h3>OKR Прогрес</h3>
+      <div class="okr-bars">
+        <div class="okr-row"><span>O1</span><div class="bar"><div id="bar-o1"></div></div><span id="pct-o1">0%</span></div>
+        <div class="okr-row"><span>O2</span><div class="bar"><div id="bar-o2"></div></div><span id="pct-o2">0%</span></div>
+        <div class="okr-row"><span>O3</span><div class="bar"><div id="bar-o3"></div></div><span id="pct-o3">0%</span></div>
+        <div class="okr-row"><span>O4</span><div class="bar"><div id="bar-o4"></div></div><span id="pct-o4">0%</span></div>
+      </div>
+      <p class="muted">* Данните се пазят локално (offline) в твоя браузър.</p>
+    </section>
+  </main>
+
+  <footer>
+    <button id="export" title="Експорт на данни (JSON)">⬇️ Експорт</button>
+    <input type="file" id="import" accept="application/json" />
+    <span id="toast"></span>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js');
+      });
+    }
+  </script>
+</body>
+</html>
