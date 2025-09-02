@@ -82,7 +82,6 @@ function loadDay(dateStr){
   dEls.notes.value = rec.notes || '';
 }
 
-\1
 // load when date changes
 if(dEls.date) dEls.date.addEventListener('change', ()=>loadDay());
 // initial load
