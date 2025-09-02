@@ -45,6 +45,8 @@ const clampPct = (val) => {
   return v;
 };
 const fmtYMD = (d) => d.toISOString().slice(0,10);
+
+// ===== Week helpers (Mon→Sun) =====
 function startOfWeek(date) {
   const d = new Date(date);
   const day = (d.getDay() + 6) % 7;  // Monday=0
@@ -56,6 +58,18 @@ function weekRangeFrom(date){
   const mon = startOfWeek(date);
   const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
   return fmtYMD(mon) + ' → ' + fmtYMD(sun);
+}
+// Нормализира каквото и да е въведено в "Седмица" към Mon→Sun
+function normalizeWeekInput(raw) {
+  const v = (raw || '').trim();
+  if (!v) return '';
+  if (v.includes('→')) {
+    const [from] = v.split('→').map(s=>s.trim());
+    const d = new Date(from+'T00:00:00');
+    return weekRangeFrom(isNaN(d) ? new Date() : d);
+  }
+  const asDate = new Date(v + 'T00:00:00');
+  return weekRangeFrom(isNaN(asDate) ? new Date() : asDate);
 }
 
 // ===== DAILY =====
@@ -142,12 +156,19 @@ function loadWeek(id) {
   if (wEls.score)  wEls.score.value  = rec.score ?? 0;
   if (wEls.retro)  wEls.retro.value  = rec.retro  || '';
 }
-if (wEls.week) wEls.week.addEventListener('change', ()=>loadWeek());
+
+// Нормализиране на седмицата към Пон→Нед
+if (wEls.week) wEls.week.addEventListener('change', ()=>{
+  wEls.week.value = normalizeWeekInput(wEls.week.value);
+  loadWeek();
+});
+
 if (wEls.date) wEls.date.addEventListener('change', ()=>{
   const v = wEls.date.valueAsDate || new Date();
   if (wEls.week) wEls.week.value = weekRangeFrom(v);
   loadWeek();
 });
+
 if (wEls.this) wEls.this.addEventListener('click', ()=>{
   const now = new Date();
   if (wEls.week) wEls.week.value = weekRangeFrom(now);
@@ -155,12 +176,14 @@ if (wEls.this) wEls.this.addEventListener('click', ()=>{
   toast('Зададена е текущата седмица ✓');
   loadWeek();
 });
+
 if (wEls.fromDate) wEls.fromDate.addEventListener('click', ()=>{
   const v = wEls.date?.valueAsDate || new Date();
   if (wEls.week) wEls.week.value = weekRangeFrom(v);
   toast('Седмицата е изчислена от датата ✓');
   loadWeek();
 });
+
 if (wEls.autoscore) wEls.autoscore.addEventListener('click', () => {
   const id = wEls.week?.value;
   if (!id || !id.includes('→')) { toast('Моля, въведи диапазон за седмицата'); return; }
@@ -181,6 +204,7 @@ if (wEls.autoscore) wEls.autoscore.addEventListener('click', () => {
   if (wEls.score) wEls.score.value = pct;
   toast('Автоматично изчислен %: '+pct+'%');
 });
+
 if (wEls.dup) wEls.dup.addEventListener('click', () => {
   const weeks = store.get('weeks', {});
   const ids = Object.keys(weeks);
@@ -197,24 +221,28 @@ if (wEls.dup) wEls.dup.addEventListener('click', () => {
   if (wEls.retro)  wEls.retro.value  = last.retro || '';
   toast('Дублирана е последната седмица ✓');
 });
+
 if (wEls.score) wEls.score.addEventListener('blur', () => {
   const v = clampPct(wEls.score.value);
   if (String(v) !== String(wEls.score.value)) toast('Коригиран % (0–100)');
   wEls.score.value = v;
 });
+
 if (wEls.save) wEls.save.addEventListener('click', () => {
   const weeks = store.get('weeks', {});
-  const id = (wEls.week?.value || 'Текуща седмица').trim();
+  const id = normalizeWeekInput(wEls.week?.value || ''); // винаги Mon→Sun
   const v = clampPct(wEls.score?.value);
-  weeks[id] = {
+  const key = id || 'Текуща седмица';
+  weeks[key] = {
     biz: wEls.biz?.value, health: wEls.health?.value,
     social: wEls.social?.value, intim: wEls.intim?.value,
     b1: wEls.b1?.value, b2: wEls.b2?.value, b3: wEls.b3?.value,
     score: v, retro: wEls.retro?.value
   };
   store.set('weeks', weeks);
+  if (wEls.week) wEls.week.value = key;
   toast('Седмицата е записана ✓');
-  loadWeek(id);
+  loadWeek(key);
   updateDashboard();
 });
 
@@ -227,6 +255,66 @@ const mEls = {
   score: document.getElementById('m-score'),
   save:  document.getElementById('m-save'),
 };
+
+// helpers: YYYY-MM, fallback за iOS
+function yymm(d = new Date()){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  return `${y}-${m}`;
+}
+
+function ensureMonthPicker(){
+  if (!mEls.month) return;
+
+  // дефолт стойност
+  if (!mEls.month.value) mEls.month.value = yymm();
+
+  // проверка за поддръжка на type="month"
+  const test = document.createElement('input');
+  test.setAttribute('type','month');
+  const supportsMonth = (test.type === 'month');
+  if (supportsMonth) return; // има нативен пикер
+
+  // fallback селекти
+  mEls.month.style.display = 'none';
+
+  const wrap = document.createElement('div');
+  wrap.style.display = 'flex';
+  wrap.style.gap = '8px';
+
+  const selY = document.createElement('select');
+  const selM = document.createElement('select');
+
+  const cur = new Date();
+  const curY = cur.getFullYear();
+  for (let y = curY - 5; y <= curY + 5; y++){
+    const opt = document.createElement('option');
+    opt.value = String(y);
+    opt.textContent = y;
+    selY.appendChild(opt);
+  }
+  for (let m = 1; m <= 12; m++){
+    const opt = document.createElement('option');
+    opt.value = String(m).padStart(2,'0');
+    opt.textContent = String(m).padStart(2,'0');
+    selM.appendChild(opt);
+  }
+
+  const [yy,mm] = (mEls.month.value || yymm()).split('-');
+  selY.value = yy; selM.value = mm;
+
+  function syncBack(){
+    mEls.month.value = `${selY.value}-${selM.value}`;
+    loadMonth(mEls.month.value);
+  }
+  selY.addEventListener('change', syncBack);
+  selM.addEventListener('change', syncBack);
+
+  wrap.appendChild(selY);
+  wrap.appendChild(selM);
+  mEls.month.insertAdjacentElement('afterend', wrap);
+}
+
 function loadMonth(id){
   if (!mEls.month) return;
   const key = (id || mEls.month.value || '').trim();
@@ -237,6 +325,9 @@ function loadMonth(id){
   if (mEls.notes) mEls.notes.value = rec.notes || '';
   if (mEls.score) mEls.score.value = rec.score ?? 0;
 }
+
+// инициализация на month picker + listeners
+ensureMonthPicker();
 if (mEls.month) mEls.month.addEventListener('change', ()=>loadMonth());
 if (mEls.score) mEls.score.addEventListener('blur', () => {
   const v = clampPct(mEls.score.value);
@@ -245,16 +336,19 @@ if (mEls.score) mEls.score.addEventListener('blur', () => {
 });
 if (mEls.save) mEls.save.addEventListener('click', () => {
   const months = store.get('months', {});
-  const id = (mEls.month?.value || 'Текущ месец').trim();
+  const id = (mEls.month?.value || yymm()).trim();
   months[id] = {
     focus: mEls.focus?.value, tasks: mEls.tasks?.value,
     notes: mEls.notes?.value, score: clampPct(mEls.score?.value)
   };
   store.set('months', months);
+  if (mEls.month) mEls.month.value = id;
   toast('Месецът е записан ✓');
   loadMonth(id);
   updateDashboard();
 });
+// първоначално зареждане
+loadMonth();
 
 // ===== OKRs & META =====
 const oEls = {
