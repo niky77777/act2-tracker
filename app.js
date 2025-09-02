@@ -82,8 +82,14 @@ function loadDay(dateStr){
   dEls.notes.value = rec.notes || '';
 }
 
+// set default date if empty
+if (dEls.date && !dEls.date.value) {
+  dEls.date.valueAsDate = new Date();
+}
+
 // load when date changes
-if(dEls.date) dEls.date.addEventListener('change', ()=>loadDay());
+if (dEls.date) dEls.date.addEventListener('change', ()=>loadDay());
+
 // initial load
 loadDay();
 
