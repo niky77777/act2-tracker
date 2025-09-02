@@ -1,5 +1,5 @@
-// ===== Version marker (for cache check) =====
-window.__ACT2_VERSION = 'v3.1.7';
+// ===== Version marker =====
+window.__ACT2_VERSION = 'v3.2.1';
 console.log('Act2 app.js', window.__ACT2_VERSION);
 
 // ===== Storage helpers =====
@@ -21,7 +21,7 @@ const store = {
   });
 })();
 
-// ===== Tabs (активираме в края) =====
+// ===== Tabs =====
 const tabs = document.querySelectorAll('#tabs button');
 const sections = document.querySelectorAll('main .tab');
 tabs.forEach(btn => btn.addEventListener('click', () => {
@@ -47,27 +47,24 @@ const clampPct = (val) => {
   if (v > 100) v = 100;
   return v;
 };
-
-// Локален формат YYYY-MM-DD (без UTC)
+// локален YYYY-MM-DD (без UTC изместване)
 const fmtYMD = (d) => {
   const y = d.getFullYear();
   const m = String(d.getMonth()+1).padStart(2,'0');
   const day = String(d.getDate()).padStart(2,'0');
   return `${y}-${m}-${day}`;
 };
-// Локално парсване на "YYYY-MM-DD"
+// парсва локално "YYYY-MM-DD" (12:00 за избягване на DST ръбове)
 const parseLocalYMD = (s) => {
-  const [y, m, d] = (s || '').split('-').map(Number);
-  return new Date(y || 1970, (m||1)-1, d||1, 12, 0, 0); // 12:00 избягва DST ръбове
+  const [y,m,d] = (s||'').split('-').map(Number);
+  return new Date(y||1970,(m||1)-1,d||1,12,0,0);
 };
 
 // ===== Week helpers (Mon→Sun) =====
-// Нова, по-робустна формула: винаги връща понеделник.
 function startOfWeek(date) {
   const d = new Date(date);
-  const day = d.getDay();                // Sun=0, Mon=1, ... Sat=6
-  const diff = (day === 0 ? -6 : 1 - day); // Sun -> -6, Mon -> 0, Tue -> -1, ...
-  d.setDate(d.getDate() + diff);
+  const diff = (d.getDay() + 6) % 7; // Monday=0, Sunday=6
+  d.setDate(d.getDate() - diff);
   d.setHours(0,0,0,0);
   return d;
 }
@@ -76,7 +73,6 @@ function weekRangeFrom(date){
   const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
   return fmtYMD(mon) + ' → ' + fmtYMD(sun);
 }
-// Нормализира каквото и да е въведено в "Седмица" към Mon→Sun
 function normalizeWeekInput(raw) {
   const v = (raw || '').trim();
   if (!v) return '';
@@ -117,13 +113,10 @@ function loadDay(dateStr){
   if (dEls.min) dEls.min.value = rec.min || '';
   if (dEls.notes) dEls.notes.value = rec.notes || '';
 }
-
-// set default date & initial load
 if (dEls.date && !dEls.date.value) dEls.date.valueAsDate = new Date();
 if (dEls.date) dEls.date.addEventListener('change', ()=>loadDay());
 loadDay();
 
-// save day
 if (dEls.save) dEls.save.addEventListener('click', () => {
   const days = store.get('days', {});
   const date = (dEls.date && dEls.date.value) || fmtYMD(new Date());
@@ -174,11 +167,11 @@ function loadWeek(id) {
   if (wEls.retro)  wEls.retro.value  = rec.retro  || '';
 }
 
-// Default week/date at start
+// Default week/date on start
 (function initWeekDefaults(){
-  const now = new Date();
-  if (wEls.week && !wEls.week.value) wEls.week.value = weekRangeFrom(now);
-  if (wEls.date && !wEls.date.value) wEls.date.valueAsDate = startOfWeek(now);
+  const mon = startOfWeek(new Date());
+  if (wEls.week && !wEls.week.value) wEls.week.value = weekRangeFrom(mon);
+  if (wEls.date && !wEls.date.value) wEls.date.valueAsDate = mon;
   loadWeek();
 })();
 
@@ -187,28 +180,24 @@ if (wEls.week) wEls.week.addEventListener('change', ()=>{
   wEls.week.value = normalizeWeekInput(wEls.week.value);
   loadWeek();
 });
-
 if (wEls.date) wEls.date.addEventListener('change', ()=>{
   const v = wEls.date.valueAsDate || new Date();
   if (wEls.week) wEls.week.value = weekRangeFrom(v);
   loadWeek();
 });
-
 if (wEls.this) wEls.this.addEventListener('click', ()=>{
-  const now = new Date();
-  if (wEls.week) wEls.week.value = weekRangeFrom(now);
-  if (wEls.date) wEls.date.valueAsDate = startOfWeek(now);
+  const mon = startOfWeek(new Date());
+  if (wEls.week) wEls.week.value = weekRangeFrom(mon);
+  if (wEls.date) wEls.date.valueAsDate = mon;   // винаги ПОНЕДЕЛНИК
   toast('Зададена е текущата седмица ✓');
   loadWeek();
 });
-
 if (wEls.fromDate) wEls.fromDate.addEventListener('click', ()=>{
   const v = wEls.date?.valueAsDate || new Date();
   if (wEls.week) wEls.week.value = weekRangeFrom(v);
   toast('Седмицата е изчислена от датата ✓');
   loadWeek();
 });
-
 if (wEls.autoscore) wEls.autoscore.addEventListener('click', () => {
   const id = wEls.week?.value;
   if (!id || !id.includes('→')) { toast('Моля, въведи диапазон за седмицата'); return; }
@@ -229,7 +218,6 @@ if (wEls.autoscore) wEls.autoscore.addEventListener('click', () => {
   if (wEls.score) wEls.score.value = pct;
   toast('Автоматично изчислен %: '+pct+'%');
 });
-
 if (wEls.dup) wEls.dup.addEventListener('click', () => {
   const weeks = store.get('weeks', {});
   const ids = Object.keys(weeks);
@@ -246,13 +234,11 @@ if (wEls.dup) wEls.dup.addEventListener('click', () => {
   if (wEls.retro)  wEls.retro.value  = last.retro || '';
   toast('Дублирана е последната седмица ✓');
 });
-
 if (wEls.score) wEls.score.addEventListener('blur', () => {
   const v = clampPct(wEls.score.value);
   if (String(v) !== String(wEls.score.value)) toast('Коригиран % (0–100)');
   wEls.score.value = v;
 });
-
 if (wEls.save) wEls.save.addEventListener('click', () => {
   const weeks = store.get('weeks', {});
   const id = normalizeWeekInput(wEls.week?.value || '');
@@ -271,7 +257,7 @@ if (wEls.save) wEls.save.addEventListener('click', () => {
   updateDashboard();
 });
 
-// ===== MONTHLY =====
+// ===== MONTHLY (fallback month picker) =====
 const mEls = {
   month: document.getElementById('m-month'),
   focus: document.getElementById('m-focus'),
@@ -280,21 +266,15 @@ const mEls = {
   score: document.getElementById('m-score'),
   save:  document.getElementById('m-save'),
 };
+const yymm = (d=new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 
-// helpers: YYYY-MM
-function yymm(d = new Date()){
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  return `${y}-${m}`;
-}
-
-// Always show fallback (year + month selects) – works on iOS too
 function ensureMonthPicker(){
   if (!mEls.month) return;
 
+  // стойност по подразбиране
   if (!mEls.month.value) mEls.month.value = yymm();
 
-  // показваме fallback за да няма проблеми с мобилни браузъри
+  // скриваме оригиналния input и слагаме селектори за година/месец (работят навсякъде)
   mEls.month.style.display = 'none';
 
   const wrap = document.createElement('div');
@@ -304,8 +284,7 @@ function ensureMonthPicker(){
   const selY = document.createElement('select');
   const selM = document.createElement('select');
 
-  const cur = new Date();
-  const curY = cur.getFullYear();
+  const curY = new Date().getFullYear();
   for (let y = curY - 5; y <= curY + 5; y++){
     const opt = document.createElement('option');
     opt.value = String(y);
@@ -333,7 +312,6 @@ function ensureMonthPicker(){
   wrap.appendChild(selM);
   mEls.month.insertAdjacentElement('afterend', wrap);
 }
-
 function loadMonth(id){
   if (!mEls.month) return;
   const key = (id || mEls.month.value || '').trim();
@@ -344,8 +322,6 @@ function loadMonth(id){
   if (mEls.notes) mEls.notes.value = rec.notes || '';
   if (mEls.score) mEls.score.value = rec.score ?? 0;
 }
-
-// init month picker + listeners
 ensureMonthPicker();
 if (mEls.month) mEls.month.addEventListener('change', ()=>loadMonth());
 if (mEls.score) mEls.score.addEventListener('blur', () => {
@@ -394,7 +370,6 @@ function loadOKRState(){
   if (oEls.o1) oEls.o1.value = okrs.o1 || '';
   if (oEls.o2) oEls.o2.value = okrs.o2 || '';
   if (oEls.o3) oEls.o3.value = okrs.o3 || '';
-  if (oEls.o4) oELS_o4_value = okrs.o4 || ''; // keep as is to avoid errors if id missing
   if (oEls.o4) oEls.o4.value = okrs.o4 || '';
 
   const prog = store.get('okrProg', {});
@@ -540,5 +515,5 @@ if (importInp) importInp.addEventListener('change', (e) => {
   reader.readAsText(file);
 });
 
-// ===== Активирай UI след като всичко е дефинирано =====
+// активирай първия таб след като всичко е заредено
 if (tabs[0]) tabs[0].click();
