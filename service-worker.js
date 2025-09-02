@@ -1,23 +1,31 @@
-const \1v3-1\3
-const ASSETS = [
-  './',
-  './index.html',
-  './style.css',
-  './app.js',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
-];
+// service-worker.js — safe bootstrap
+const CACHE_NAME = 'besti-cache-v3-1';
+
+// Активира се веднага, без да чака
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
+  self.skipWaiting();
 });
+
+// Поема контрол веднага
 self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE_NAME && caches.delete(k))))
-  );
+  self.clients.claim();
 });
+
+// Опционален кеш-first за собствени ресурси (без предварително addAll)
 self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then(resp => resp || fetch(e.request))
-  );
+  const url = new URL(e.request.url);
+  if (url.origin === location.origin) {
+    e.respondWith(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        const cached = await cache.match(e.request);
+        if (cached) return cached;
+        const resp = await fetch(e.request);
+        // кеширай само успешни отговори
+        if (resp && resp.status === 200 && resp.type === 'basic') {
+          cache.put(e.request, resp.clone());
+        }
+        return resp;
+      })
+    );
+  }
 });
