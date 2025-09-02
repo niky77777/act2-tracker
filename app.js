@@ -1,5 +1,5 @@
 // ===== Version marker (for cache check) =====
-window.__ACT2_VERSION = 'v3.1.4';
+window.__ACT2_VERSION = 'v3.1.6';
 console.log('Act2 app.js', window.__ACT2_VERSION);
 
 // ===== Storage helpers =====
@@ -21,7 +21,7 @@ const store = {
   });
 })();
 
-// ===== Tabs =====
+// ===== Tabs (без автоматичен click – ще го извикаме най-накрая) =====
 const tabs = document.querySelectorAll('#tabs button');
 const sections = document.querySelectorAll('main .tab');
 tabs.forEach(btn => btn.addEventListener('click', () => {
@@ -32,7 +32,6 @@ tabs.forEach(btn => btn.addEventListener('click', () => {
   if (sec) sec.classList.remove('hidden');
   updateDashboard();
 }));
-if (tabs[0]) tabs[0].click();
 
 // ===== UI utils =====
 const toast = (msg) => {
@@ -48,7 +47,19 @@ const clampPct = (val) => {
   if (v > 100) v = 100;
   return v;
 };
-const fmtYMD = (d) => d.toISOString().slice(0,10);
+
+// Локален формат YYYY-MM-DD (без UTC)
+const fmtYMD = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+};
+// Локално парсване на "YYYY-MM-DD"
+const parseLocalYMD = (s) => {
+  const [y, m, d] = (s || '').split('-').map(Number);
+  return new Date(y || 1970, (m||1)-1, d||1, 12, 0, 0); // 12:00 избягва DST ръбове
+};
 
 // ===== Week helpers (Mon→Sun) =====
 function startOfWeek(date) {
@@ -69,10 +80,10 @@ function normalizeWeekInput(raw) {
   if (!v) return '';
   if (v.includes('→')) {
     const [from] = v.split('→').map(s=>s.trim());
-    const d = new Date(from+'T00:00:00');
+    const d = parseLocalYMD(from);
     return weekRangeFrom(isNaN(d) ? new Date() : d);
   }
-  const asDate = new Date(v + 'T00:00:00');
+  const asDate = parseLocalYMD(v);
   return weekRangeFrom(isNaN(asDate) ? new Date() : asDate);
 }
 
@@ -202,10 +213,10 @@ if (wEls.autoscore) wEls.autoscore.addEventListener('click', () => {
   const [from, to] = id.split('→').map(s => s.trim());
   const days = store.get('days', {});
   let done = 0, total = 0;
-  const fromD = new Date(from+'T00:00:00');
-  const toD = new Date(to+'T23:59:59');
+  const fromD = parseLocalYMD(from);
+  const toD   = parseLocalYMD(to); toD.setHours(23,59,59,999);
   Object.entries(days).forEach(([date, d]) => {
-    const cur = new Date(date+'T12:00:00');
+    const cur = parseLocalYMD(date);
     if (cur >= fromD && cur <= toD) {
       if (d.b1) { total++; if (d.b1c) done++; }
       if (d.b2) { total++; if (d.b2c) done++; }
@@ -275,14 +286,13 @@ function yymm(d = new Date()){
   return `${y}-${m}`;
 }
 
-// Always provide a fallback picker (works on iOS too)
+// Always show fallback (year + month selects) – works on iOS too
 function ensureMonthPicker(){
   if (!mEls.month) return;
 
-  // default value
   if (!mEls.month.value) mEls.month.value = yymm();
 
-  // ALWAYS show fallback (year + month selects) to avoid iOS issues
+  // показваме fallback за да няма проблеми с мобилни браузъри
   mEls.month.style.display = 'none';
 
   const wrap = document.createElement('div');
@@ -526,3 +536,6 @@ if (importInp) importInp.addEventListener('change', (e) => {
   };
   reader.readAsText(file);
 });
+
+// ===== Активирай UI след като всичко е дефинирано =====
+if (tabs[0]) tabs[0].click();
