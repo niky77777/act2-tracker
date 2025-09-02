@@ -66,7 +66,27 @@ const dEls = {
   notes: document.getElementById('d-notes'),
   save: document.getElementById('d-save'),
 };
-dEls.date.valueAsDate = new Date();
+// --- injected: load current date data from localStorage ---
+function loadDay(dateStr){
+  const date = dateStr || (dEls.date.value || fmtYMD(new Date()));
+  const days = store.get('days', {}) || {};
+  const rec = days[date] || {};
+
+  dEls.b1.value = rec.b1 || '';
+  dEls.b1c.checked = !!rec.b1c;
+  dEls.b2.value = rec.b2 || '';
+  dEls.b2c.checked = !!rec.b2c;
+  dEls.b3.value = rec.b3 || '';
+  dEls.b3c.checked = !!rec.b3c;
+  dEls.min.value = rec.min || '';
+  dEls.notes.value = rec.notes || '';
+}
+
+\1
+// load when date changes
+if(dEls.date) dEls.date.addEventListener('change', ()=>loadDay());
+// initial load
+loadDay();
 
 dEls.save.addEventListener('click', () => {
   const days = store.get('days', {});

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'act2-cache-v3';
+const \1v3-1\3
 const ASSETS = [
   './',
   './index.html',
