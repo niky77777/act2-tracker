@@ -1,5 +1,5 @@
 // ===== Version marker (for cache check) =====
-window.__ACT2_VERSION = 'v3.1.6';
+window.__ACT2_VERSION = 'v3.1.7';
 console.log('Act2 app.js', window.__ACT2_VERSION);
 
 // ===== Storage helpers =====
@@ -21,7 +21,7 @@ const store = {
   });
 })();
 
-// ===== Tabs (без автоматичен click – ще го извикаме най-накрая) =====
+// ===== Tabs (активираме в края) =====
 const tabs = document.querySelectorAll('#tabs button');
 const sections = document.querySelectorAll('main .tab');
 tabs.forEach(btn => btn.addEventListener('click', () => {
@@ -62,10 +62,12 @@ const parseLocalYMD = (s) => {
 };
 
 // ===== Week helpers (Mon→Sun) =====
+// Нова, по-робустна формула: винаги връща понеделник.
 function startOfWeek(date) {
   const d = new Date(date);
-  const day = (d.getDay() + 6) % 7;  // Monday=0
-  d.setDate(d.getDate() - day);
+  const day = d.getDay();                // Sun=0, Mon=1, ... Sat=6
+  const diff = (day === 0 ? -6 : 1 - day); // Sun -> -6, Mon -> 0, Tue -> -1, ...
+  d.setDate(d.getDate() + diff);
   d.setHours(0,0,0,0);
   return d;
 }
@@ -392,6 +394,7 @@ function loadOKRState(){
   if (oEls.o1) oEls.o1.value = okrs.o1 || '';
   if (oEls.o2) oEls.o2.value = okrs.o2 || '';
   if (oEls.o3) oEls.o3.value = okrs.o3 || '';
+  if (oEls.o4) oELS_o4_value = okrs.o4 || ''; // keep as is to avoid errors if id missing
   if (oEls.o4) oEls.o4.value = okrs.o4 || '';
 
   const prog = store.get('okrProg', {});
