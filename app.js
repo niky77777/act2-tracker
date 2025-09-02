@@ -1,3 +1,7 @@
+// ===== Version marker (for cache check) =====
+window.__ACT2_VERSION = 'v3.1.4';
+console.log('Act2 app.js', window.__ACT2_VERSION);
+
 // ===== Storage helpers =====
 const store = {
   get: (k, fallback) => { try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch(e){ return fallback; } },
@@ -157,7 +161,15 @@ function loadWeek(id) {
   if (wEls.retro)  wEls.retro.value  = rec.retro  || '';
 }
 
-// Нормализиране на седмицата към Пон→Нед
+// Default week/date at start
+(function initWeekDefaults(){
+  const now = new Date();
+  if (wEls.week && !wEls.week.value) wEls.week.value = weekRangeFrom(now);
+  if (wEls.date && !wEls.date.value) wEls.date.valueAsDate = startOfWeek(now);
+  loadWeek();
+})();
+
+// Normalize to Mon→Sun on any manual change
 if (wEls.week) wEls.week.addEventListener('change', ()=>{
   wEls.week.value = normalizeWeekInput(wEls.week.value);
   loadWeek();
@@ -230,9 +242,9 @@ if (wEls.score) wEls.score.addEventListener('blur', () => {
 
 if (wEls.save) wEls.save.addEventListener('click', () => {
   const weeks = store.get('weeks', {});
-  const id = normalizeWeekInput(wEls.week?.value || ''); // винаги Mon→Sun
-  const v = clampPct(wEls.score?.value);
+  const id = normalizeWeekInput(wEls.week?.value || '');
   const key = id || 'Текуща седмица';
+  const v = clampPct(wEls.score?.value);
   weeks[key] = {
     biz: wEls.biz?.value, health: wEls.health?.value,
     social: wEls.social?.value, intim: wEls.intim?.value,
@@ -256,26 +268,21 @@ const mEls = {
   save:  document.getElementById('m-save'),
 };
 
-// helpers: YYYY-MM, fallback за iOS
+// helpers: YYYY-MM
 function yymm(d = new Date()){
   const y = d.getFullYear();
   const m = String(d.getMonth()+1).padStart(2,'0');
   return `${y}-${m}`;
 }
 
+// Always provide a fallback picker (works on iOS too)
 function ensureMonthPicker(){
   if (!mEls.month) return;
 
-  // дефолт стойност
+  // default value
   if (!mEls.month.value) mEls.month.value = yymm();
 
-  // проверка за поддръжка на type="month"
-  const test = document.createElement('input');
-  test.setAttribute('type','month');
-  const supportsMonth = (test.type === 'month');
-  if (supportsMonth) return; // има нативен пикер
-
-  // fallback селекти
+  // ALWAYS show fallback (year + month selects) to avoid iOS issues
   mEls.month.style.display = 'none';
 
   const wrap = document.createElement('div');
@@ -326,7 +333,7 @@ function loadMonth(id){
   if (mEls.score) mEls.score.value = rec.score ?? 0;
 }
 
-// инициализация на month picker + listeners
+// init month picker + listeners
 ensureMonthPicker();
 if (mEls.month) mEls.month.addEventListener('change', ()=>loadMonth());
 if (mEls.score) mEls.score.addEventListener('blur', () => {
@@ -347,7 +354,6 @@ if (mEls.save) mEls.save.addEventListener('click', () => {
   loadMonth(id);
   updateDashboard();
 });
-// първоначално зареждане
 loadMonth();
 
 // ===== OKRs & META =====
